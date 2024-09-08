@@ -1,0 +1,19 @@
+path_to_certificate_directory: "/etc/nginx/certs"
+path_to_private_directory: "/etc/nginx/private"
+path_to_private_key: "/etc/nginx/private/hufflepuff_ca.key"
+path_to_certificate: "/etc/nginx/certs/hufflepuff_ca.crt"
+path_to_ca_server_key: "/etc/nginx/private/hufflepuff_server.key"
+path_to_ca_server: "/etc/nginx/certs/hufflepuff_server.csr"
+path_to_selfsigned_certificate: "/etc/nginx/certs/selfsigned.crt"
+
+subject_details:
+  countryName: "CZ"
+  stateOrProvinceName: "Ostrava"
+  localityName: "Rychvald"
+  organizationName: "Hufflepuff inc"
+  organizationalUnitName: "IT"
+  commonName: "hufflepuffserver.com"
+  emailAddress: "admin@hufflepuff.inc"
+
+proxy_pass: "http://172.19.0.4:80"
+path_to_nginx_file: "roles/reverse_proxy/templates/nginx.conf.j2"

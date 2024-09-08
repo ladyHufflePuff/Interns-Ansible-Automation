@@ -1,0 +1,8 @@
+path_to_local_repository: "/home/uchechi/destination"
+path_to_remote_repository: "https://github.com/EdgeKing810/interns-docker-compose-lamp.git"
+path_to_env_sample: "/home/uchechi/destination/.env.sample"
+path_to_env: "/home/uchechi/destination/.env"
+path_to_Dockerfile: "/home/uchechi/destination/bin/webserver/Dockerfile"
+path_to_ansible_docker_compose: "roles/configure_lamp/files/docker-compose.yml"
+path_to_docker_compose: "/home/uchechi/destination/docker-compose.yml"
+path_to_php_file: "/home/uchechi/destination/webroot/index.php"

@@ -1,0 +1,81 @@
+---
+- name: Check if repository exist
+  ansible.builtin.stat:
+    path: "{{path_to_local_repository}}"
+  register: repo_dir
+
+- name: Clone repository
+  ansible.builtin.git:
+    repo: "{{path_to_remote_repository}}"
+    dest: "{{path_to_local_repository}}"
+    clone: yes
+    update: no
+  when: not repo_dir.stat.exists
+  environment:
+    GIT_SSL_NO_VERIFY: "true"
+- name: Check if .env.sample exists
+  ansible.builtin.stat:
+    path: "{{path_to_env_sample}}"
+  register: env_sample
+
+- name: Create .env file
+  copy:
+    src: "{{path_to_env_sample}}"
+    dest: "{{path_to_env}}"
+  when: env_sample.stat.exists
+
+- name: Remove env.sample
+  file:
+    path: "{{path_to_env_sample}}"
+    state: absent
+  when: env_sample.stat.exists
+
+- name: Generate DB credentials
+  set_fact:
+    db_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters+digits+punctuation') }}"
+    db_root_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters+digits+punctuation') }}"
+    db_name: 'hufflepuffdb'
+    db_username: 'uchechi'
+  
+- name: Configure .env
+  lineinfile:
+    path: "{{path_to_env}}"
+    regexp: '^{{ item.key }}='
+    line: '{{ item.key }}={{ item.value }}'
+    create: yes
+  with_items: 
+    - { key: 'DB_PASSWORD', value: "{{ db_password }}" }
+    - { key: 'DB_ROOT_PASSWORD', value:  "{{ db_root_password }}"}
+    - { key: 'DB_NAME', value: "{{db_name}}" }
+    - { key: 'DB_USERNAME', value: "{{ db_username}}"}
+  when: not repo_dir.stat.exists
+
+
+- name: Add PHP extension for bcmath to Dockerfile
+  lineinfile:
+    path: "{{path_to_Dockerfile}}"
+    insertafter: '^(\s*docker-php-ext-install json && \\)$'
+    line: '    docker-php-ext-install bcmath && \'
+      
+- name: Add PHP extension for opcache to Dockerfile
+  lineinfile:
+    path: "{{path_to_Dockerfile}}"
+    insertafter: '^(\s*docker-php-ext-install bcmath && \\)$'
+    line: '    docker-php-ext-install opcache && \'
+
+- name: Create docker compose file
+  copy:
+    src: "{{path_to_ansible_docker_compose}}"
+    dest: "{{path_to_docker_compose}}"
+  
+- name: Changing db username and password in index.php file
+  lineinfile:
+    path: "{{path_to_php_file}}"
+    regexp: 'mysqli_connect\("mysql", "[^"]*", "[^"]*", null\);'
+    line: '                                    $link = mysqli_connect("mysql", "{{ db_username}}", "{{ db_password }}", null);'
+  when: not repo_dir.stat.exists 
+ 
+- name: Running the docker compose file
+  shell: docker-compose up -d
+  args:
+    chdir: "{{path_to_local_repository}}"

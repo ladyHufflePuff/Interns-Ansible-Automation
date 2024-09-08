@@ -1,0 +1,25 @@
+---
+- name: Update and Upgrade the System
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: yes
+  become: yes
+
+- name: Install Python3
+  ansible.builtin.apt:
+    name: "{{ python_package }}"
+    state: present
+  become: yes  
+
+- name: Install Python3 virtualenv package
+  ansible.builtin.apt:
+    name: "{{ venv_package }}"
+    state: present
+  become: yes  
+
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: "{{ nginx_package }}"
+    state: latest
+  become: yes
+  notify: Enable and Start Nginx  

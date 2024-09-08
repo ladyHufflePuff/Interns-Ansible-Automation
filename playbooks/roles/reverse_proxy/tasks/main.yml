@@ -1,0 +1,70 @@
+---
+- name: Creating a directory for ssl certificates and private keys
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{path_to_certificate_directory}}"
+    - "{{path_to_private_directory}}"
+
+- name: Creating a CA private key
+  ansible.builtin.openssl_privatekey:
+    path: "{{path_to_private_key}}"
+    size: 2048
+    type: RSA
+  register: private_key
+
+- name: Creating a CA Cerificate
+  ansible.builtin.openssl_certificate:
+    provider: selfsigned
+    path: "{{path_to_certificate}}"
+    privatekey_path: "{{path_to_private_key}}"
+    subject: "{{subject_details}}"
+    state: present
+  register: ca_certificate
+
+- name: Generate server private key
+  ansible.builtin.openssl_privatekey:
+    path: "{{path_to_ca_server_key}}"
+    size: 2048
+    state: present
+   
+- name: Create Certificate Signing Request 
+  ansible.builtin.openssl_csr:
+    path: "{{path_to_ca_server}}"
+    privatekey_path: "{{path_to_ca_server_key}}"
+    subject: "{{subject_details}}"
+    state: present
+  register: certificate_signing_request
+
+- name: Self-Sign Certificate
+  ansible.builtin.openssl_certificate:
+    path: "{{path_to_selfsigned_certificate}}"
+    csr_path: "{{path_to_ca_server}}"
+    ownca_privatekey_path: "{{path_to_private_key}}"
+    provider: ownca
+    ownca_path: "{{path_to_certificate}}"
+    subject: "{{subject_details}}"
+    issuer: "{{subject_details}}"
+    state: present
+
+- name: Template Nginx configuration
+  ansible.builtin.template:
+    src: "{{path_to_nginx_file}}"
+    dest: /etc/nginx/sites-available/{{inventory_hostname}}
+    mode: '0644'
+  notify: Restart Nginx
+
+- name: Enable the Nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/{{inventory_hostname}}
+    dest: /etc/nginx/sites-enabled/{{inventory_hostname}}
+    state: link
+  notify: Restart Nginx
+
+- name: Disable default Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart Nginx
